@@ -25,6 +25,7 @@ int GetFewestTotalPresses(int[] goal, int[][] buttons)
         if (index == buttons.Length)
         {
             var increments = new int[goal.Length];
+
             foreach (var btn in pressed)
             {
                 foreach (var pos in buttons[btn])
@@ -32,20 +33,23 @@ int GetFewestTotalPresses(int[] goal, int[][] buttons)
                     increments[pos]++;
                 }
             }
+
             patterns.Add((increments, pressed.Count));
             return;
         }
+
         GenerateButtonCombinations(pressed, index + 1);
         pressed.Add(index);
         GenerateButtonCombinations(pressed, index + 1);
         pressed.RemoveAt(pressed.Count - 1);
     }
 
-    int FindMinimumPresses(int[] current, Dictionary<string, int> memo)
+    int FindMinimumPresses(int[] current, Dictionary<string, int> cache)
     {
         if (current.All(x => x <= 1))
         {
             var minCost = 1000000;
+
             foreach (var (increments, cost) in patterns)
             {
                 if (increments.Zip(current, (inc, cur) => inc % 2 == cur).All(x => x))
@@ -53,19 +57,23 @@ int GetFewestTotalPresses(int[] goal, int[][] buttons)
                     minCost = Math.Min(minCost, cost);
                 }
             }
+
             return minCost;
         }
 
         var key = string.Join(",", current);
-        if (memo.TryGetValue(key, out var cached))
+
+        if (cache.TryGetValue(key, out var result))
         {
-            return cached;
+            return result;
         }
 
-        var result = 1000000;
+        result = 1000000;
+
         foreach (var (increments, cost) in patterns)
         {
             var valid = true;
+
             for (var i = 0; i < current.Length; i++)
             {
                 if (increments[i] > current[i] || increments[i] % 2 != current[i] % 2)
@@ -78,7 +86,8 @@ int GetFewestTotalPresses(int[] goal, int[][] buttons)
             if (valid)
             {
                 var next = current.Zip(increments, (g, p) => (g - p) / 2).ToArray();
-                var subResult = FindMinimumPresses(next, memo);
+                var subResult = FindMinimumPresses(next, cache);
+
                 if (subResult < 1000000)
                 {
                     result = Math.Min(result, cost + 2 * subResult);
@@ -86,7 +95,9 @@ int GetFewestTotalPresses(int[] goal, int[][] buttons)
             }
         }
 
-        return memo[key] = result;
+        cache[key] = result;
+
+        return result;
     }
 }
 
