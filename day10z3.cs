@@ -22,38 +22,38 @@ int GetFewestPresses(int[] target, int[][] buttons, bool isLights)
     using var ctx = new Context();
     var solver = ctx.MkOptimize();
 
-    var buttonVariables = buttons.Select((_, i) => ctx.MkIntConst($"b{i}")).ToArray();
+    var variables = buttons.Select((_, i) => ctx.MkIntConst($"b{i}")).ToArray();
 
-    foreach (var v in buttonVariables)
+    foreach (var v in variables)
     {
         solver.Assert(ctx.MkGe(v, ctx.MkInt(0)));
     }
 
     for (var i = 0; i < target.Length; i++)
     {
-        var coefficients = new List<IntExpr>();
+        var parameters = new List<IntExpr>();
 
         for (var j = 0; j < buttons.Length; j++)
         {
             if (buttons[j].Contains(i))
             {
-                coefficients.Add(buttonVariables[j]);
+                parameters.Add(variables[j]);
             }
         }
 
         if (isLights)
         {
-            solver.Assert(ctx.MkEq(ctx.MkMod((IntExpr)ctx.MkAdd(coefficients), ctx.MkInt(2)), ctx.MkInt(target[i])));
+            solver.Assert(ctx.MkEq(ctx.MkMod((IntExpr)ctx.MkAdd(parameters), ctx.MkInt(2)), ctx.MkInt(target[i])));
         }
         else
         {
-            solver.Assert(ctx.MkEq(ctx.MkAdd(coefficients), ctx.MkInt(target[i])));
+            solver.Assert(ctx.MkEq(ctx.MkAdd(parameters), ctx.MkInt(target[i])));
         }
     }
 
-    solver.MkMinimize(ctx.MkAdd(buttonVariables));
+    solver.MkMinimize(ctx.MkAdd(variables));
 
-    return solver.Check() == Status.SATISFIABLE ? buttonVariables.Sum(v => ((IntNum)solver.Model.Evaluate(v)).Int) : -1;
+    return solver.Check() == Status.SATISFIABLE ? variables.Sum(v => ((IntNum)solver.Model.Evaluate(v)).Int) : -1;
 }
 
 record Machine(int[] Lights, int[][] Buttons, int[] Joltages);
